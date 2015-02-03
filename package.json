@@ -1,0 +1,17 @@
+{
+  "name": "TicTacToe",
+  "version": "1.0.0",
+  "description": "Node.js based multiplayer WebSocket implementation of TicTacToe",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "John Frizelle <johnfriz@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.11.2",
+    "optval": "^1.0.1",
+    "socket.io": "^1.3.2",
+    "winston": "^0.9.0"
+  }
+}
