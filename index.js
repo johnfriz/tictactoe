@@ -26,12 +26,13 @@ io.on('connection', function (socket) {
     unmatchedPlayers.push(socket.id);
 
     if( unmatchedPlayers.length ===1 ) {
-        socket.emit('waiting', 'Waiting for another player to join');
+        socket.emit('waiting', 'Welcome ' + username + '!<br/><br/>Waiting for another player to join...');
     } else {
       // We have more than 2 unmatched players - start a new game
       var playerIds = unmatchedPlayers.splice(0,2);
       var playerX = players[playerIds[0]];
       var playerO = players[playerIds[1]];
+      winston.info('Starting game between players : ', playerIds);
 
       // Create a new Id for the game.
       // We will use this for the socket room as well as for the game state
@@ -55,7 +56,7 @@ io.on('connection', function (socket) {
       playerO.join(gameId);
 
       // Tell the players that the game has begun
-      socket.to(gameId).emit('game on', {'gameId': gameId, 'X' : playerX.username, 'O' : playerO.username});
+      io.to(gameId).emit('game on', {'gameId': gameId, 'X' : playerX.username, 'O' : playerO.username});
     }
   });
 
@@ -65,7 +66,7 @@ io.on('connection', function (socket) {
 
     //TODO - check game state
 
-    socket.to(data.gameId).emit('move', {
+    io.to(data.gameId).emit('move', {
       username: socket.username,
       message: data
     });
@@ -75,7 +76,7 @@ io.on('connection', function (socket) {
   socket.on('reset', function (data) {
     winston.info('socket id:', socket.id, ' :: game reset - ', data);
     games[data.gameId].gameState = {}
-    socket.to(data.gameId).emit('reset', {});
+    io.to(data.gameId).emit('reset', {});
   });
 
   // when the user disconnects add the remaining user back into the unmatchedPlayers array and delete the game
@@ -114,8 +115,6 @@ io.on('connection', function (socket) {
     }
 
     // echo globally that this client has left
-    socket.to(gameId).emit('user left', {
-      username: socket.username
-    });
+    io.to(gameId).emit('user left', 'User ' + socket.username + ' has quit!<br/><br/>Waiting for another player to join...');
   });
 });

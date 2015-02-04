@@ -14,19 +14,10 @@ $(function() {
 
   // Prompt for setting a username
   var username;
-  var connected = false;
 
   var socket = io();
 
-  function addParticipantsMessage (data) {
-    var message = '';
-    if (data.numUsers === 1) {
-      message += "there's 1 participant";
-    } else {
-      message += "there are " + data.numUsers + " participants";
-    }
-    log(message);
-  }
+  $('.gameArea').hide();
 
   // Sets the client's username
   function setUsername () {
@@ -66,11 +57,17 @@ $(function() {
   // Whenever the server emits 'waiting', put the user in a waiting for opponent state
   socket.on('waiting', function (data) {
     console.log('waiting - ', data);
+    $('.gameArea').hide();
+    $('.gameArea.gameWaiting').show();
+    $('.gameArea.gameWaiting').html(data);
   });
 
   // Whenever the server emits 'game on', start a new game
   socket.on('game on', function (data) {
     console.log('game on - ', data);
+    $('.gameArea').hide();
+    $('.gameArea.gameBoard').show();
+
   });
 
   // Whenever the server emits 'move', update the game board
@@ -86,5 +83,8 @@ $(function() {
   // Whenever the server emits 'user left', remove the game board and put uer in waiting state
   socket.on('user left', function (data) {
     console.log('user left - ', data);
+    $('.gameArea').hide();
+    $('.gameArea.gameWaiting').show();
+    $('.gameArea.gameWaiting').html(data);
   });
 });
