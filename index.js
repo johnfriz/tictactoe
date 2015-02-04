@@ -66,9 +66,11 @@ io.on('connection', function (socket) {
 
     //TODO - check game state
 
+    var player = players[socket.id];
+
     io.to(data.gameId).emit('move', {
-      username: socket.username,
-      message: data
+      player: player.side,
+      move: data.square
     });
   });
 

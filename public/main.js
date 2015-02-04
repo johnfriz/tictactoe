@@ -15,9 +15,14 @@ $(function() {
   // Prompt for setting a username
   var username;
 
+  var move = 'X';
+  var player = '';
+  var gameId = '';
+
   var socket = io();
 
   $('.gameArea').hide();
+  //$('.login').hide();
 
   // Sets the client's username
   function setUsername () {
@@ -52,6 +57,32 @@ $(function() {
     $usernameInput.focus();
   });
 
+  function checkState() {
+    if( move === player ) {
+      $('.status').html("It's your Go...<br/>Click a blank square to make your mark");
+    }
+    else {
+      $('.status').html("Waiting for your opponent to make a move...");
+    }
+  }
+
+
+  $('.gameBoard').bind('click', function(event) {
+    console.log(event.target.id);
+    if( move === player ) {
+      socket.emit('move', {gameId: gameId, square: event.target.id});
+    }
+    else {
+      alert("Don't be so impatient! It's not your turn yet.");
+    }
+  });
+
+  function resetBoard() {
+    $('.gameSquare').text('');
+    move = 'X';
+    checkState();
+  }
+
   // Socket events
 
   // Whenever the server emits 'waiting', put the user in a waiting for opponent state
@@ -65,14 +96,39 @@ $(function() {
   // Whenever the server emits 'game on', start a new game
   socket.on('game on', function (data) {
     console.log('game on - ', data);
-    $('.gameArea').hide();
-    $('.gameArea.gameBoard').show();
 
+    player = username === data.X ? 'X' : 'O';
+    gameId = data.gameId;
+
+    $('.gameArea').hide();
+    $('.gameArea.gamePlaying').show();
+    $('.playerX').text('X: ' + ('X' === player ? 'You' : data.X));
+    $('.playerO').text('O: ' + ('O' === player ? 'You' : data.O));
+    checkState();
   });
 
   // Whenever the server emits 'move', update the game board
   socket.on('move', function (data) {
     console.log('move - ', data);
+    // If the active player made a bad move, tell them
+    if( data.error && data.player === player) {
+      alert(data.error.message);
+    }
+
+    //Update the game board with the move just made
+    if(data.move) {
+      $('.gameBoard #' + data.move).text(data.player);
+    }
+
+    if(data.winner) {
+      var msg = player === data.player ? "Congratulations!!! You Won!" : "Hard Luck. You Lost :-(";
+      alert(msg);
+      resetBoard();
+    } else {
+      // Update who's turn it is and change state
+      move = data.player === 'X' ? 'O' : 'X';
+      checkState();
+    }
   });
 
   // Whenever the server emits 'reset', reset the game board
