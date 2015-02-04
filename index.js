@@ -45,11 +45,16 @@ io.on('connection', function (socket) {
       playerX.gameId = gameId;
       playerO.gameId = gameId;
 
+
       games[gameId] = {
         created: new Date(),
         id: gameId,
         playerInfo: [playerX.id, playerO.id],
-        gameState: {}
+        state: {
+          board : {},
+          X : {},
+          O : {}
+        }
       };
       // Add the players to the Namespace (i.e. the game room)
       playerX.join(gameId);
@@ -64,14 +69,13 @@ io.on('connection', function (socket) {
   socket.on('move', function (data) {
     winston.info('socket id:', socket.id, ' :: game move - ', data);
 
-    //TODO - check game state
-
+    var game = games[data.gameId];
     var player = players[socket.id];
 
-    io.to(data.gameId).emit('move', {
-      player: player.side,
-      move: data.square
-    });
+    var state = checkGame(game, player, data);
+    winston.info('socket id:', socket.id, ' :: game move state - ', state);
+
+    io.to(data.gameId).emit('move', state);
   });
 
   // when the user makes a move, check for winning play and emit game state
@@ -120,3 +124,82 @@ io.on('connection', function (socket) {
     io.to(gameId).emit('user left', 'User ' + socket.username + ' has quit!<br/><br/>Waiting for another player to join...');
   });
 });
+
+
+// Game logic
+// Store the bitwise values for the winning combinations
+var winners = [];
+winners.push( (1 << 1) + (1 << 2) + (1 << 3) );
+winners.push( (1 << 4) + (1 << 5) + (1 << 6) );
+winners.push( (1 << 7) + (1 << 8) + (1 << 9) );
+winners.push( (1 << 1) + (1 << 4) + (1 << 7) );
+winners.push( (1 << 2) + (1 << 5) + (1 << 8) );
+winners.push( (1 << 3) + (1 << 6) + (1 << 9) );
+winners.push( (1 << 1) + (1 << 5) + (1 << 9) );
+winners.push( (1 << 3) + (1 << 5) + (1 << 7) );
+
+function checkGame(game, player, move) {
+  var state = {
+    player : player.side
+  };
+
+  var gameState = game.state;
+  var square = move.square;
+
+  // Check if square is already used
+  if(optval(gameState.board[square], '') !== '') {
+    winston.info('square in use');
+    state.error = true;
+    state.message = 'This space is already occupied!';
+    return state;
+  }
+
+  // Store the current move
+  gameState.board[square] = player.side;
+  gameState[player.side][square] = 1;
+
+  winston.info('gameState = ', gameState.board);
+
+  // Store the move in the state returned to the client
+  state.move = square;
+
+  if(isWinner(gameState[player.side])) {
+    // Check if the current player has one
+    state.winner = true;
+    game.state = resetGameState();
+  }
+  else if (Object.keys(gameState.board).length === 9) {
+    // Check if all squares are filled - i.e. a draw
+    state.draw = true;
+    game.state = resetGameState();
+  }
+
+  return state;
+}
+
+function isWinner(playerState) {
+  // Bit shift the owned squares using the winning patterns
+  // If the player owns the squares necessary for a win, the sum of the bit shifted
+  // value will exist in the winners array and a match will be found.
+  return (
+    hasVal( (playerState[1] << 1) + (playerState[2] << 2) + (playerState[3] << 3) ) ||
+    hasVal( (playerState[4] << 4) + (playerState[5] << 5) + (playerState[6] << 6) ) ||
+    hasVal( (playerState[7] << 7) + (playerState[8] << 8) + (playerState[9] << 9) ) ||
+    hasVal( (playerState[1] << 1) + (playerState[4] << 4) + (playerState[7] << 7) ) ||
+    hasVal( (playerState[2] << 2) + (playerState[5] << 5) + (playerState[8] << 8) ) ||
+    hasVal( (playerState[3] << 3) + (playerState[6] << 6) + (playerState[9] << 9) ) ||
+    hasVal( (playerState[1] << 1) + (playerState[5] << 5) + (playerState[9] << 9) ) ||
+    hasVal( (playerState[3] << 3) + (playerState[5] << 5) + (playerState[7] << 7) ) );
+}
+
+function hasVal(val) {
+  return winners.indexOf(val) != -1;
+}
+
+function resetGameState() {
+  return {
+    board : {},
+    X : {},
+    O : {}
+  };
+}

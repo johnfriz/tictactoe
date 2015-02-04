@@ -85,6 +85,10 @@ ul {
 }
 
 /* Game page */
+.game {
+  display: none;
+}
+
 .gameWaiting {
     padding-top: 100px;
     font-size: 200%;
@@ -95,7 +99,11 @@ ul {
 
 .gamePlaying {
   margin-left: 100px;
-  margin-top: 100px;
+}
+
+.gameResult {
+  font-size: 200%;
+  line-height: 100px;
 }
 
 .gameRow {
@@ -121,4 +129,17 @@ ul {
 
 .gameMessage .status {
   margin-top: 10px;
+}
+
+
+.green {
+    color: green;
+}
+
+.red {
+    color: red;
+}
+
+.grey {
+    color: grey;
 }
